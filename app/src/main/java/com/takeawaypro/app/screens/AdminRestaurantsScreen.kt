@@ -1,0 +1,68 @@
+package com.takeawaypro.app.screens
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.takeawaypro.app.AppData
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdminRestaurantsScreen(
+    appData: AppData,
+    onBack: () -> Unit,
+    onOpenRestaurant: (String) -> Unit
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Restaurants & Cafés") },
+                navigationIcon = { TextButton(onClick = onBack) { Text("←") } }
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            items(appData.restaurants.toList(), key = { it.businessName }) { restaurant ->
+                val ordersFromThisAccount = appData.orders.count {
+                    it.account.businessName == restaurant.businessName
+                }
+                Card(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                "${restaurant.businessType.emoji} ${restaurant.businessName}",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(restaurant.city, style = MaterialTheme.typography.bodySmall)
+                            Text(restaurant.phone, style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                "${restaurant.baselineOrderCount + ordersFromThisAccount} commandes",
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                        TextButton(onClick = { onOpenRestaurant(restaurant.businessName) }) {
+                            Text("Ouvrir →")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
