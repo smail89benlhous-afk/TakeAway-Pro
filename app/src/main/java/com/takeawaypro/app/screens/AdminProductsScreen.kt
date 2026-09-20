@@ -1,0 +1,142 @@
+package com.takeawaypro.app.screens
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.takeawaypro.app.AppData
+import com.takeawaypro.app.Product
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdminProductsScreen(
+    appData: AppData,
+    onBack: () -> Unit,
+    onAddProduct: () -> Unit,
+    onEditProduct: (String) -> Unit
+) {
+    var productPendingDelete by remember { mutableStateOf<Product?>(null) }
+    var busyProductId by remember { mutableStateOf<String?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Produits") },
+                navigationIcon = { TextButton(onClick = onBack) { Text("←") } },
+                actions = {
+                    TextButton(onClick = onAddProduct) { Text("➕ Ajouter") }
+                }
+            )
+        }
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            if (error != null) {
+                Text(
+                    error!!,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(appData.adminProducts.toList(), key = { it.id }) { product ->
+                    val hidden = product.hidden
+                    val busy = busyProductId == product.id
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                ProductThumbnail(product, size = 44.dp, modifier = Modifier.padding(end = 8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        product.name,
+                                        fontWeight = FontWeight.SemiBold,
+                                        style = if (hidden) MaterialTheme.typography.bodyLarge.copy(
+                                            color = MaterialTheme.colorScheme.outline
+                                        ) else MaterialTheme.typography.bodyLarge
+                                    )
+                                    Text(
+                                        "${product.category} • ${String.format("%.2f DH", product.price)} • Stock: ${product.stock}",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                    if (hidden) {
+                                        Text(
+                                            "Masqué",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                OutlinedButton(onClick = { onEditProduct(product.id) }, enabled = !busy) {
+                                    Text("✏️ Modifier")
+                                }
+                                OutlinedButton(
+                                    onClick = {
+                                        busyProductId = product.id
+                                        error = null
+                                        scope.launch {
+                                            val result = appData.setProductVisibility(product.id, !hidden)
+                                            busyProductId = null
+                                            result.onFailure { error = it.message ?: "Action impossible." }
+                                        }
+                                    },
+                                    enabled = !busy
+                                ) {
+                                    Text(if (hidden) "👁️ Afficher" else "👁️ Masquer")
+                                }
+                                OutlinedButton(
+                                    onClick = { productPendingDelete = product },
+                                    enabled = !busy,
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.error
+                                    )
+                                ) {
+                                    Text("🗑️ Supprimer")
+                                }
+                            }
+                        }
+                    }
+                }
+                item { Spacer(Modifier.height(16.dp)) }
+            }
+        }
+    }
+
+    productPendingDelete?.let { product ->
+        AlertDialog(
+            onDismissRequest = { productPendingDelete = null },
+            title = { Text("Supprimer le produit ?") },
+            text = { Text("« ${product.name} » sera supprimé du catalogue.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val toDelete = product.id
+                    productPendingDelete = null
+                    busyProductId = toDelete
+                    error = null
+                    scope.launch {
+                        val result = appData.deleteProduct(toDelete)
+                        busyProductId = null
+                        result.onFailure { error = it.message ?: "Suppression impossible." }
+                    }
+                }) { Text("Supprimer", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { productPendingDelete = null }) { Text("Annuler") }
+            }
+        )
+    }
+}

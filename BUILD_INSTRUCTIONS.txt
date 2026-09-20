@@ -1,0 +1,50 @@
+TakeAway Pro - ouverture du projet (application Android)
+1. Décompressez le ZIP.
+2. Ouvrez le dossier dans Android Studio (File > Open) — ouvrez le dossier racine
+   (celui qui contient settings.gradle.kts), pas le sous-dossier app/.
+3. Laissez Android Studio synchroniser Gradle.
+   - Si Android Studio propose de créer/mettre à jour le "Gradle Wrapper", acceptez : le
+     projet n'en contient pas encore, Android Studio le génère automatiquement au premier sync.
+4. Lancez l'application (▶) sur un téléphone Android ou un émulateur (minSdk 24 / Android 7+).
+
+PARCOURS À TESTER
+- Côté restaurant/café : Accueil → Créer un compte (ou Se connecter avec le numéro de démo
+  0600000001, n'importe quel mot de passe, pour charger le compte "Café Atlas") → parcourir
+  les produits → ajouter au panier → Panier → Passer la commande → choisir le paiement →
+  Confirmer → suivi de la commande.
+- Côté administrateur : Accueil → "🛠️ Espace administrateur" → mot de passe "admin123"
+  (voir AdminLoginScreen.kt pour le changer) → Dashboard → Produits (ajouter/modifier/
+  masquer/supprimer, avec une vraie photo depuis la galerie du téléphone si vous voulez) /
+  Restaurants & Cafés (voir les commandes et achats de chaque établissement) / Notifications
+  (une notification apparaît à chaque commande passée ; l'ouvrir permet de faire avancer le
+  statut de la commande, visible ensuite dans le suivi côté restaurant).
+- Fermez et rouvrez l'application : le compte, le catalogue, les commandes et les
+  notifications sont toujours là (sauvegardés sur l'appareil).
+
+CE QUI MARCHE VRAIMENT DANS CETTE VERSION
+- Toutes les données (compte, catalogue produits, commandes, notifications) sont
+  sauvegardées sur l'appareil (SharedPreferences, format JSON) et survivent à la fermeture
+  de l'application. Il n'y a pas encore de serveur : rien ne se synchronise entre plusieurs
+  téléphones — chaque installation a ses propres données locales.
+- L'espace administrateur est protégé par un mot de passe simple (voir plus haut). Ce n'est
+  pas un vrai système de comptes/rôles séparés — juste un verrou local pour la démo.
+- L'admin peut choisir une vraie photo depuis la galerie du téléphone pour chaque produit ;
+  elle s'affiche ensuite partout (accueil, panier, catalogue admin) à la place de l'emoji.
+  Ces photos restent aussi locales à l'appareil (pas encore uploadées vers un serveur).
+- Le paiement électronique est visible dans l'écran de confirmation mais désactivé
+  ("bientôt disponible") ; seul "Paiement à la livraison" fonctionne.
+
+LIMITES CONNUES DE CETTE VERSION (attendues pour un v1 sans vrai serveur)
+- Aucune synchronisation entre appareils : un restaurant qui commande depuis son téléphone
+  et l'admin qui regarde depuis un autre téléphone ne voient pas les mêmes données. Pour ça,
+  il faut brancher l'app sur le dossier backend/ fourni à côté (voir backend/README.md) —
+  c'est la prochaine étape la plus importante.
+- La connexion restaurant n'est pas sécurisée (pas de vérification réelle du mot de passe) ;
+  elle sert à démontrer le parcours et charger un compte de démonstration par numéro de
+  téléphone.
+- La console administrateur est dans la même app Android que le client ; à extraire en
+  application/web séparée si vous voulez restreindre l'accès à votre équipe uniquement.
+
+Ce fichier accompagne la version 1.0 : parcours client complet + console administrateur
+complète avec sauvegarde locale et photos, prête à être branchée sur le vrai Backend fourni
+dans backend/ (voir "Prochaines étapes" dans README.md).
