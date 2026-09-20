@@ -4,7 +4,7 @@ const Database = require("better-sqlite3");
 const dbPath = path.join(__dirname, "..", "..", "data", "takeaway.sqlite");
 const db = new Database(dbPath);
 
-db.pragma("journal_mode = WAL");
+db.pragma("journal_mode = DELETE");
 db.pragma("foreign_keys = ON");
 
 db.exec(`
@@ -70,7 +70,6 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 `);
 
-// Seed the product catalog once, on first run, so the API isn't empty out of the box.
 const productCount = db.prepare("SELECT COUNT(*) AS count FROM products").get().count;
 if (productCount === 0) {
     const insert = db.prepare(`
@@ -95,8 +94,6 @@ if (productCount === 0) {
     insertMany(seedProducts);
 }
 
-// Seed the admin account on first run, from ADMIN_PHONE / ADMIN_PASSWORD env vars,
-// so the hosted deployment has a working admin login without a separate manual step.
 const bcrypt = require("bcryptjs");
 const adminPhone = process.env.ADMIN_PHONE || "0600000000";
 const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
