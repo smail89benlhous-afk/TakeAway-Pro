@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 `);
 
+// Seed the product catalog once, on first run, so the API isn't empty out of the box.
 const productCount = db.prepare("SELECT COUNT(*) AS count FROM products").get().count;
 if (productCount === 0) {
     const insert = db.prepare(`
@@ -94,17 +95,23 @@ if (productCount === 0) {
     insertMany(seedProducts);
 }
 
+// Seed (or re-sync) the admin account on every startup, from ADMIN_PHONE / ADMIN_PASSWORD
+// env vars — this way the admin password always matches whatever is currently set in
+// Railway's Variables, even if it was changed after the account was first created.
 const bcrypt = require("bcryptjs");
 const adminPhone = process.env.ADMIN_PHONE || "0600000000";
 const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+const passwordHash = bcrypt.hashSync(adminPassword, 10);
 const existingAdmin = db.prepare("SELECT id FROM accounts WHERE phone = ?").get(adminPhone);
 if (!existingAdmin) {
-    const passwordHash = bcrypt.hashSync(adminPassword, 10);
     db.prepare(`
         INSERT INTO accounts (role, business_name, manager_name, phone, password_hash, city, address)
         VALUES ('admin', 'TakeAway Pro - Administration', 'Administrateur', ?, ?, '-', '-')
     `).run(adminPhone, passwordHash);
     console.log(`Compte administrateur initial créé pour le numéro ${adminPhone}.`);
+} else {
+    db.prepare("UPDATE accounts SET password_hash = ? WHERE id = ?").run(passwordHash, existingAdmin.id);
+    console.log(`Mot de passe administrateur resynchronisé pour le numéro ${adminPhone}.`);
 }
 
 module.exports = db;
